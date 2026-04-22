@@ -10,7 +10,7 @@ Custom component pro Home Assistant – integrace bazosCrawler
   - Nainstalujte HACS
   - V HACS rozhraní kliknout v pravém horním rohu na tři svislé tečky
   - Kliknout na Vlastní repozitáře
-  - Přidat adresu `https://github.com/petos/` a typ `Integrace`
+  - Přidat adresu `https://github.com/petos/bazosCrawler` a typ `Integrace`
   - Po přidání repozitáře vyhledat `BazosCrawler` a nainstalovat
   - Po restartu Home Assistenta přidat jako Integraci v Nastavení -> Integrace
 - Ručně:
