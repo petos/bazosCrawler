@@ -1,9 +1,5 @@
-from __future__ import annotations
-
 import voluptuous as vol
-
 from homeassistant import config_entries
-from homeassistant.helpers import selector
 
 from .const import DOMAIN, DEFAULT_UPDATE_INTERVAL
 
@@ -15,29 +11,35 @@ class BazosConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
+        errors = {}
+
         if user_input is not None:
             term = user_input[CONF_SEARCH_TERM].strip()
+
+            await self.async_set_unique_id(term.lower())
+            self._abort_if_unique_id_configured()
 
             return self.async_create_entry(
                 title=f"Bazos: {term}",
                 data={
                     CONF_SEARCH_TERM: term,
-                    "exact": True,
+                    CONF_UPDATE_INTERVAL: user_input[CONF_UPDATE_INTERVAL],
                 },
+                options={},
             )
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_SEARCH_TERM): selector.TextSelector(
-                    selector.TextSelectorConfig(multiline=False)
-                ),
-                vol.Required(
-                    CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL
-                ): int,
+                vol.Required(CONF_SEARCH_TERM): str,
+                vol.Optional(CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL): int,
             }
         )
 
-        return self.async_show_form(step_id="user", data_schema=schema)
+        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+
+    @staticmethod
+    def async_get_options_flow(config_entry):
+        return BazosOptionsFlow(config_entry)
 
 
 class BazosOptionsFlow(config_entries.OptionsFlow):
@@ -48,18 +50,18 @@ class BazosOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        current_term = self.config_entry.data.get(CONF_SEARCH_TERM, "")
-        current_interval = self.config_entry.options.get(
-            CONF_UPDATE_INTERVAL,
-            self.config_entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
-        )
-
         schema = vol.Schema(
             {
-                vol.Required(CONF_SEARCH_TERM, default=current_term): selector.TextSelector(
-                    selector.TextSelectorConfig(multiline=False)
-                ),
-                vol.Required(CONF_UPDATE_INTERVAL, default=current_interval): int,
+                vol.Optional(
+                    CONF_UPDATE_INTERVAL,
+                    default=self.config_entry.options.get(
+                        CONF_UPDATE_INTERVAL,
+                        self.config_entry.data.get(
+                            CONF_UPDATE_INTERVAL,
+                            DEFAULT_UPDATE_INTERVAL,
+                        ),
+                    ),
+                ): int
             }
         )
 

@@ -1,127 +1,83 @@
+import logging
 import requests
 import re
-import logging
-from urllib.parse import quote
 from datetime import datetime
 
 _LOGGER = logging.getLogger(__name__)
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0"
-}
+BASE_URL = "https://www.bazos.cz/search.php?hledat={term}&crz={offset}"
 
 
 class BazosApi:
-    PAGE_SIZE = 20
-    MAX_PAGES = 25
+    def __init__(self):
+        self.session = requests.Session()
 
-    def fetch(self, term: str, exact: bool = True) -> list[dict]:
-        """Public method: returns deduplicated list of items."""
-        all_items = []
-        seen_ids = set()
+    def fetch(self, term: str):
+        term = requests.utils.quote(f'"{term}"')
 
         offset = 0
-        page = 0
+        all_items = []
+        seen = set()
 
         while True:
-            html = self._fetch_page(term, offset, exact)
-            items = self._parse(html, term)
+            url = BASE_URL.format(term=term, offset=offset)
+            _LOGGER.debug("GET %s", url)
 
-            _LOGGER.debug(
-                "Page %s: fetched=%s unique=%s",
-                page, len(items), len(seen_ids)
-            )
+            r = self.session.get(url, timeout=10)
+            html = r.text
 
-            new_items = []
-            for item in items:
-                item_id = item.get("id")
-                if item_id and item_id not in seen_ids:
-                    seen_ids.add(item_id)
-                    new_items.append(item)
+            blocks = re.findall(r'<div class="inzeraty inzeratyflex">(.*?)</div>', html, re.S)
 
-            all_items.extend(new_items)
+            _LOGGER.debug("Found blocks: %s", len(blocks))
 
-            # stop conditions
-            if len(items) < self.PAGE_SIZE:
+            if not blocks:
                 break
 
-            if not new_items:
+            new_count = 0
+
+            for b in blocks:
+                href = re.search(r'href="([^"]+)"', b)
+                if not href:
+                    continue
+
+                link = href.group(1)
+                id_match = re.search(r"/(\d+)\.php", link)
+
+                if not id_match:
+                    continue
+
+                item_id = id_match.group(1)
+
+                if item_id in seen:
+                    continue
+
+                seen.add(item_id)
+                new_count += 1
+
+                title = re.search(r'class="nadpis".*?>(.*?)</a>', b, re.S)
+                title = title.group(1).strip() if title else ""
+
+                date_match = re.search(r"\[(\d{1,2})\.(\d{1,2})\.\s*(\d{4})\]", b)
+                date = None
+                if date_match:
+                    d, m, y = map(int, date_match.groups())
+                    date = datetime(y, m, d).date()
+
+                all_items.append(
+                    {
+                        "id": item_id,
+                        "title": title,
+                        "link": link,
+                        "date": date,
+                    }
+                )
+
+            _LOGGER.debug("Page offset=%s new=%s total=%s", offset, new_count, len(all_items))
+
+            if len(blocks) < 20:
                 break
 
-            page += 1
-            if page >= self.MAX_PAGES:
-                _LOGGER.warning("Paging limit reached")
-                break
-
-            offset += self.PAGE_SIZE
+            offset += 20
 
         _LOGGER.debug("Total unique items: %s", len(all_items))
-        return all_items
-
-    def _fetch_page(self, term: str, offset: int, exact: bool) -> str:
-        q = quote(f'"{term}"' if exact else term)
-        url = f"https://www.bazos.cz/search.php?hledat={q}&crz={offset}"
-
-        _LOGGER.debug("GET %s", url)
-
-        r = requests.get(url, headers=HEADERS, timeout=20)
-        r.raise_for_status()
-
-        return r.text
-
-    def _parse(self, html: str, term: str) -> list[dict]:
-        items = []
-
-        blocks = re.findall(
-            r'<div class="inzeraty inzeratyflex">(.*?)</div>\s*</div>',
-            html,
-            re.S,
-        )
-
-        _LOGGER.debug("Found blocks: %d", len(blocks))
-
-        for b in blocks:
-            link_match = re.search(
-                r'href="([^"]+/inzerat/(\d+)/[^"]+)"',
-                b
-            )
-
-            if not link_match:
-                continue
-
-            name_match = re.search(
-                r'<h2 class=nadpis><a[^>]*>(.*?)</a>',
-                b
-            )
-
-            price_match = re.search(
-                r'<div class="inzeratycena">(.*?)</div>',
-                b,
-                re.S,
-            )
-
-            date = self._parse_date(b)
-
-            items.append({
-                "id": link_match.group(2),
-                "link": link_match.group(1),
-                "name": re.sub(r"<.*?>", "", name_match.group(1)) if name_match else "",
-                "price": price_match.group(1).strip() if price_match else "",
-                "date": date,
-                "keyword": term,
-            })
-
-        return items
-
-    def _parse_date(self, block: str):
-        match = re.search(r"\[(\d{1,2}\.\d{1,2}\.\s*\d{4})\]", block)
-        if not match:
-            return None
-
-        raw = match.group(1).replace(" ", "")  # e.g. 21.4.2026
-
-        try:
-            return datetime.strptime(raw, "%d.%m.%Y").date()
-        except ValueError:
-            _LOGGER.debug("Failed to parse date: %s", raw)
-            return None
+        return {"items": all_items}
