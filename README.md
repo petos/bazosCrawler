@@ -1,6 +1,6 @@
-# HA Vodarenska
+# bazosCrawler
 
-Custom component pro Home Assistant – integrace s VAS Vodárenská API.
+Custom component pro Home Assistant – integrace bazosCrawler
 
 ## Instalace
 - Přes HACS
@@ -11,13 +11,15 @@ Custom component pro Home Assistant – integrace s VAS Vodárenská API.
   - V HACS rozhraní kliknout v pravém horním rohu na tři svislé tečky
   - Kliknout na Vlastní repozitáře
   - Přidat adresu `https://github.com/petos/` a typ `Integrace`
-  - Po přidání repozitáře vyhledat `BazosCrowler` a nainstalovat
+  - Po přidání repozitáře vyhledat `BazosCrawler` a nainstalovat
   - Po restartu Home Assistenta přidat jako Integraci v Nastavení -> Integrace
 - Ručně:
-  - `/config/custom_components/bazoscrowler/` + všechny soubory
+  - `/config/custom_components/bazoscrawler/` + všechny soubory
 
 ## Senzory
-- `sensor.vec`: stav vodomeru
+ - `Celkem` -- Celkovy počet nalezených inzerátů s daným klíčovym slovem
+ - `Dnes` -- Počet přidaných inzerátu dnes
+ - `Nové dnes` -- Binární sensor - překlopí se do `True` ve chvíli, kdy najde nový, zatím neviděný inzerát. Při dalším běhu, ve výchozím nastavení 5 minut, se překlopí zpět do `False`. 
 
 ### Atributy
 
@@ -27,8 +29,5 @@ Custom component pro Home Assistant – integrace s VAS Vodárenská API.
 - Automaticky vytvoří senzory
 - Aktualizace hodnot probíhá jednou za 5 minut
 
-## HelloWorld
-- Existuje a je nadefinovany sensor pro HelloWorld, ktery je ovsem deaktivovany (disabled). Slouží především pro debug při problémy s API. 
-
 ## Hlášení chyb
-Nejlépe přes https://github.com/petos/bazoscrowler/issues
+Nejlépe přes https://github.com/petos/bazosCrawler/issues
