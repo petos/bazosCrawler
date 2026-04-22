@@ -22,7 +22,10 @@ Custom component pro Home Assistant – integrace bazosCrawler
  - `Nové dnes` -- Binární sensor - překlopí se do `True` ve chvíli, kdy najde nový, zatím neviděný inzerát. Při dalším běhu, ve výchozím nastavení 5 minut, se překlopí zpět do `False`. 
 
 ### Atributy
+ - URL na search do Bazose. 
 
+### Button
+ - Je k dispozici i button, ktery otevira URL se shledanim. 
 
 ## Konfigurace
 - Přes UI konfiguraci

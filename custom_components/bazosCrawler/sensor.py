@@ -24,6 +24,11 @@ class BazosTotalSensor(BazosEntity, SensorEntity):
     def state(self):
         return len(self.coordinator.data.get("items", []))
 
+    @property
+    def extra_state_attributes(self):
+        return {
+            "search_url": f"https://www.bazos.cz/search.php?hledat=%22{self._term}%22"
+        }
 
 class BazosTodaySensor(BazosEntity, SensorEntity):
     @property
