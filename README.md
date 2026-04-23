@@ -25,7 +25,7 @@ Custom component pro Home Assistant – integrace bazosCrawler
  - URL na search do Bazose. 
 
 ### Button
- - Je k dispozici i button, ktery otevira URL se shledanim. 
+ - Je k dispozici i button, ktery otevira URL s hledanim. Je nutne mit nainstalovany Browser plugin z HACS. 
 
 ## Konfigurace
 - Přes UI konfiguraci
