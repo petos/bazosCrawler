@@ -6,8 +6,8 @@ from urllib.parse import quote
 
 _LOGGER = logging.getLogger(__name__)
 
-BASE_URL = "https://www.bazos.cz/search.php?hledat={term}&crz={offset}&hlokalita=&{psc}humkreis={okoli}&cenaod={cenaod}&cenado={cenado}"
-
+BASE_URL = "https://www.bazos.cz/search.php?hledat={term}&crz={offset}"
+# ~ BASE_URL = "https://www.bazos.cz/search.php?hledat={term}&crz={offset}&hlokalita=&{psc}humkreis={okoli}&cenaod={cenaod}&cenado={cenado}"
 
 class BazosApi:
     def __init__(self):
