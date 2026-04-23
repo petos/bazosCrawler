@@ -2,14 +2,18 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .entity import BazosEntity
 
+async def async_setup_entry(hass, entry, async_add_entities):
+    coordinator = hass.data[DOMAIN][entry.entry_id]
+    term = entry.data["search_term"]
 
-class BazosEntity(CoordinatorEntity):
-    def __init__(self, coordinator, term):
-        super().__init__(coordinator)
-        self._term = term
-        self._slug = "".join(c.lower() if c.isalnum() else "_" for c in term)
-
+    async_add_entities(
+        [
+            BazosTotalSensor(coordinator, term),
+            BazosTodaySensor(coordinator, term),
+        ]
+    )
 
 class BazosTotalSensor(BazosEntity, SensorEntity):
     @property

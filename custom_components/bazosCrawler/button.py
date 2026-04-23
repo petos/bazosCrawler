@@ -2,7 +2,7 @@ from homeassistant.components.button import ButtonEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-
+from .entity import BazosEntity
 
 async def async_setup_entry(hass, entry, async_add_entities):
     coordinator = hass.data[DOMAIN][entry.entry_id]
@@ -13,11 +13,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
     ])
 
 
-class BazosOpenSearchButton(CoordinatorEntity, ButtonEntity):
+class BazosOpenSearchButton(BazosEntity, ButtonEntity):
     def __init__(self, coordinator, term: str):
-        super().__init__(coordinator)
-        self._term = term
-        self._slug = "".join(c.lower() if c.isalnum() else "_" for c in term)
+        super().__init__(coordinator, term)
 
     @property
     def name(self):
