@@ -2,18 +2,31 @@ import logging
 import requests
 import re
 from datetime import datetime
+from urllib.parse import quote
 
 _LOGGER = logging.getLogger(__name__)
 
-BASE_URL = "https://www.bazos.cz/search.php?hledat={term}&crz={offset}"
+BASE_URL = "https://www.bazos.cz/search.php?hledat={term}&crz={offset}&hlokalita=&{psc}humkreis={okoli}&cenaod={cenaod}&cenado={cenado}"
 
 
 class BazosApi:
     def __init__(self):
         self.session = requests.Session()
+        self.session.headers.update(
+            {
+                "User-Agent": (
+                    "Mozilla/5.0 (X11; Linux x86_64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/120.0 Safari/537.36"
+                )
+            }
+        )
 
+    # -------------------------
+    # PUBLIC API
+    # -------------------------
     def fetch(self, term: str):
-        term = requests.utils.quote(f'"{term}"')
+        term = quote(f'"{term}"')
 
         offset = 0
         all_items = []
@@ -26,7 +39,7 @@ class BazosApi:
             r = self.session.get(url, timeout=10)
             html = r.text
 
-            blocks = re.findall(r'<div class="inzeraty inzeratyflex">(.*?)</div>', html, re.S)
+            blocks = self._extract_blocks(html)
 
             _LOGGER.debug("Found blocks: %s", len(blocks))
 
@@ -36,17 +49,12 @@ class BazosApi:
             new_count = 0
 
             for b in blocks:
-                href = re.search(r'href="([^"]+)"', b)
-                if not href:
+                link = self._extract_link(b)
+                item_id = self._extract_id(link)
+
+                if not item_id:
+                    _LOGGER.debug("Skipping block (no id): %s", str(b)[:200])
                     continue
-
-                link = href.group(1)
-                id_match = re.search(r"/(\d+)\.php", link)
-
-                if not id_match:
-                    continue
-
-                item_id = id_match.group(1)
 
                 if item_id in seen:
                     continue
@@ -54,14 +62,8 @@ class BazosApi:
                 seen.add(item_id)
                 new_count += 1
 
-                title = re.search(r'class="nadpis".*?>(.*?)</a>', b, re.S)
-                title = title.group(1).strip() if title else ""
-
-                date_match = re.search(r"\[(\d{1,2})\.(\d{1,2})\.\s*(\d{4})\]", b)
-                date = None
-                if date_match:
-                    d, m, y = map(int, date_match.groups())
-                    date = datetime(y, m, d).date()
+                title = self._extract_title(b)
+                date = self._extract_date(b)
 
                 all_items.append(
                     {
@@ -72,8 +74,14 @@ class BazosApi:
                     }
                 )
 
-            _LOGGER.debug("Page offset=%s new=%s total=%s", offset, new_count, len(all_items))
+            _LOGGER.debug(
+                "Page offset=%s new=%s total=%s",
+                offset,
+                new_count,
+                len(all_items),
+            )
 
+            # pagination stop condition
             if len(blocks) < 20:
                 break
 
@@ -81,3 +89,87 @@ class BazosApi:
 
         _LOGGER.debug("Total unique items: %s", len(all_items))
         return {"items": all_items}
+
+    # -------------------------
+    # BLOCK EXTRACTION
+    # -------------------------
+    def _extract_blocks(self, html: str):
+        """
+        NOTE:
+        intentionally NOT regex-based anymore for stability
+        """
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup(html, "html.parser")
+        return soup.select("div.inzeraty.inzeratyflex")
+
+    # -------------------------
+    # SELF-HEALING LINK
+    # -------------------------
+    def _extract_link(self, block):
+        tag = block.select_one(".inzeratynadpis a")
+        if tag and tag.get("href"):
+            return tag.get("href")
+
+        tag = block.select_one("a[href*='inzerat']")
+        if tag and tag.get("href"):
+            return tag.get("href")
+
+        tag = block.find("a")
+        if tag and tag.get("href"):
+            return tag.get("href")
+
+        return None
+
+    # -------------------------
+    # ID EXTRACTION
+    # -------------------------
+    def _extract_id(self, link: str):
+        if not link:
+            return None
+
+        match = re.search(r"/(\d+)\.php", link)
+        if match:
+            return match.group(1)
+
+        match = re.search(r"/(\d{6,})", link)
+        if match:
+            return match.group(1)
+
+        return None
+
+    # -------------------------
+    # TITLE EXTRACTION
+    # -------------------------
+    def _extract_title(self, block):
+        tag = block.select_one(".inzeratynadpis a")
+        if tag:
+            return tag.get_text(strip=True)
+
+        tag = block.find("h2")
+        if tag:
+            return tag.get_text(strip=True)
+
+        text = block.get_text(" ", strip=True)
+        return text[:120] if text else ""
+
+    # -------------------------
+    # DATE EXTRACTION
+    # -------------------------
+    def _extract_date(self, block):
+        text = block.get_text(" ", strip=True)
+
+        match = re.search(
+            r"\[(\d{1,2})\.(\d{1,2})\.\s*(\d{4})\]",
+            text
+        )
+
+        if not match:
+            return None
+
+        d, m, y = map(int, match.groups())
+
+        try:
+            return datetime(y, m, d).date()
+        except ValueError:
+            return None

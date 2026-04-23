@@ -1,5 +1,7 @@
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorStateClass, SensorDeviceClass
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from datetime import date, datetime
+
 
 from .const import DOMAIN
 from .entity import BazosEntity
@@ -25,14 +27,22 @@ class BazosTotalSensor(BazosEntity, SensorEntity):
         return f"{DOMAIN}_{self._slug}_total"
 
     @property
-    def state(self):
+    def native_value(self):
         return len(self.coordinator.data.get("items", []))
 
     @property
-    def extra_state_attributes(self):
-        return {
-            "search_url": f"https://www.bazos.cz/search.php?hledat=%22{self._term}%22"
-        }
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def icon(self):
+        return "mdi:counter"
+
+    # ~ @property
+    # ~ def extra_state_attributes(self):
+        # ~ return {
+            # ~ "search_url": f"https://www.bazos.cz/search.php?hledat=%22{self._term}%22"
+        # ~ }
 
 class BazosTodaySensor(BazosEntity, SensorEntity):
     @property
@@ -44,6 +54,27 @@ class BazosTodaySensor(BazosEntity, SensorEntity):
         return f"{DOMAIN}_{self._slug}_today"
 
     @property
-    def state(self):
+    def native_value(self):
         items = self.coordinator.data.get("items", [])
-        return sum(1 for i in items if i.get("date") is not None)
+        today = date.today()
+
+        count = 0
+
+        for i in items:
+            d = i.get("date")
+
+            if isinstance(d, datetime):
+                d = d.date()
+
+            if d == today:
+                count += 1
+
+        return count
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def icon(self):
+        return "mdi:counter"
