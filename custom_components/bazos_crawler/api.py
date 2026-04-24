@@ -2,12 +2,11 @@ import logging
 import requests
 import re
 from datetime import datetime
-from urllib.parse import quote
+
 
 _LOGGER = logging.getLogger(__name__)
+from .const import BASE_URL
 
-BASE_URL = "https://www.bazos.cz/search.php?hledat={term}&crz={offset}"
-# ~ BASE_URL = "https://www.bazos.cz/search.php?hledat={term}&crz={offset}&hlokalita=&{psc}humkreis={okoli}&cenaod={cenaod}&cenado={cenado}"
 
 class BazosApi:
     def __init__(self):
@@ -25,18 +24,18 @@ class BazosApi:
     # -------------------------
     # PUBLIC API
     # -------------------------
-    def fetch(self, term: str):
-        term = quote(f'"{term}"')
+    def fetch(self, url: str):
 
         offset = 0
         all_items = []
         seen = set()
 
         while True:
-            url = BASE_URL.format(term=term, offset=offset)
-            _LOGGER.debug("GET %s", url)
-
-            r = self.session.get(url, timeout=10)
+            
+            _LOGGER.debug("url: %s", url)
+            _LOGGER.debug("offset: %d", offset)
+            pagedurl = self._getpagedurl(url, offset)
+            r = self.session.get(pagedurl, timeout=10)
             html = r.text
 
             blocks = self._extract_blocks(html)
@@ -173,3 +172,6 @@ class BazosApi:
             return datetime(y, m, d).date()
         except ValueError:
             return None
+
+    def _getpagedurl( self, url: str, offset: int):
+        return "{url}&crz={offset}".format(url=url, offset=offset)

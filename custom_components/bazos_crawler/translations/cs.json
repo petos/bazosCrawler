@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nastavení BazošCrawleru",
+        "data": {
+          "search_term": "Hledaný termín",
+          "search_psc": "PSČ",
+          "search_okoli": "V okruhu (km)",
+          "search_cenaod": "Cena od",
+          "search_cenado": "Cena do",
+          "update_interval": "Interval aktualizace (s)"
+        }
+      }
+    },
+    "error": {
+      "invalid_number": "Musí být číslo",
+      "empty": "Pole nesmí být prázdné"
+    }
+  }
+}
