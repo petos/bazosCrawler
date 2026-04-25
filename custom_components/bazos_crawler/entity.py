@@ -12,8 +12,20 @@ class BazosEntity(CoordinatorEntity):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, self.coordinator.entry.entry_id)},
+            "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
             "name": f"Bazos {self._term}",
             "manufacturer": "BazosCrawler",
             "model": "Search",
         }
+
+    @property
+    def extra_state_attributes(self):
+        url = self.coordinator.url
+        return {
+            "search_url": url,
+            "search_link": f"[Open Bazos]({url})"
+        }
+
+    @property
+    def unique_id(self):
+        return f"{self.coordinator.config_entry.entry_id}_{self._slug}"
