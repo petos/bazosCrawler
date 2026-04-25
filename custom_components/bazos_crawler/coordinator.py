@@ -5,7 +5,7 @@ from urllib.parse import quote
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN, DEFAULT_UPDATE_INTERVAL, BASE_URL, CONF_UPDATE_INTERVAL
-from .const import CONF_SEARCH_TERM, CONF_PSC, CONF_OKOLI, CONF_CENAOD, CONF_CENADO
+from .const import CONF_SEARCH_TERM, CONF_PSC, CONF_OKOLI, CONF_CENAOD, CONF_CENADO, CONF_SEARCH_EXACT
 
 from .api import BazosApi
 

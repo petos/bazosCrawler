@@ -11,5 +11,6 @@ CONF_PSC = "search_psc"
 CONF_OKOLI = "search_okoli"
 CONF_CENAOD = "search_cenaod"
 CONF_CENADO = "search_cenado"
+CONF_SEARCH_EXACT = "search_exact"
 
 CONF_UPDATE_INTERVAL = "update_interval"
