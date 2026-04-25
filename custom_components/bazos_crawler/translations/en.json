@@ -4,17 +4,69 @@
       "user": {
         "title": "Bazos setup",
         "data": {
-          "search_term": "Search term",
-          "search_psc": "ZIP code",
-          "search_okoli": "Radius (km)",
-          "search_cenaod": "Price from",
-          "search_cenado": "Price to",
-          "update_interval": "Update interval (s)"
+          "search_term": {
+            "name": "Search term",
+            "description": "Enter the text you want to search for"
+          },
+          "update_interval": {
+            "name": "Update interval (s)",
+            "description": "How often the search should refresh (in seconds)"
+          },
+          "search_exact": {
+            "name": "Exact match only",
+            "description": "Search only for exact matches of the given term"
+          },
+          "search_psc": {
+            "name": "ZIP code",
+            "description": "Enter a 5-digit ZIP code (e.g. 11000)"
+          },
+          "search_okoli": {
+            "name": "Radius (km)",
+            "description": "Distance from ZIP code in kilometers"
+          },
+          "search_cenaod": {
+            "name": "Price from",
+            "description": "Minimum price"
+          },
+          "search_cenado": {
+            "name": "Price to",
+            "description": "Maximum price"
+          }
+        }
+      },
+      "init": {
+        "title": "Bazos options",
+        "data": {
+          "update_interval": {
+            "name": "Update interval (s)",
+            "description": "How often the search should refresh (in seconds)"
+          },
+          "search_exact": {
+            "name": "Exact match only",
+            "description": "Search only for exact matches of the given term"
+          },
+          "search_psc": {
+            "name": "ZIP code",
+            "description": "Enter a 5-digit ZIP code (e.g. 11000)"
+          },
+          "search_okoli": {
+            "name": "Radius (km)",
+            "description": "Distance from ZIP code in kilometers"
+          },
+          "search_cenaod": {
+            "name": "Price from",
+            "description": "Minimum price"
+          },
+          "search_cenado": {
+            "name": "Price to",
+            "description": "Maximum price"
+          }
         }
       }
     },
     "error": {
       "invalid_number": "Must be a number",
+      "invalid_psc": "Enter a valid ZIP code (5 digits)",
       "empty": "Field cannot be empty"
     }
   }

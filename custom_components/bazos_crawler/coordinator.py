@@ -1,55 +1,69 @@
-import logging
 from datetime import timedelta
 from urllib.parse import quote
 
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import DOMAIN, DEFAULT_UPDATE_INTERVAL, BASE_URL, CONF_UPDATE_INTERVAL
-from .const import CONF_SEARCH_TERM, CONF_PSC, CONF_OKOLI, CONF_CENAOD, CONF_CENADO, CONF_SEARCH_EXACT
+from .const import (
+    DOMAIN,
+    BASE_URL,
+    CONF_SEARCH_TERM,
+    CONF_PSC,
+    CONF_OKOLI,
+    CONF_CENAOD,
+    CONF_CENADO,
+    CONF_SEARCH_EXACT,
+    CONF_UPDATE_INTERVAL,
+)
 
-from .api import BazosApi
 
-_LOGGER = logging.getLogger(__name__)
+def build_url(exact: bool, term: str, psc, okoli, cenaod, cenado):
+    if exact:
+        term = quote(f'"{term}"')
+
+    return BASE_URL.format(
+        term=term,
+        psc=psc or "",
+        okoli=okoli or "",
+        cenaod=cenaod or "",
+        cenado=cenado or "",
+    )
 
 
 class BazosDataUpdateCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass, entry):
-        self.hass = hass
-        self.entry = entry
+    def __init__(self, hass, config_entry, api):
+        self.config_entry = config_entry
+        self.api = api
 
-        update_interval = entry.options.get(
+        update_interval = config_entry.options.get(
             CONF_UPDATE_INTERVAL,
-            entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL),
+            config_entry.data.get(CONF_UPDATE_INTERVAL),
         )
-
-        self.api = BazosApi()
 
         super().__init__(
             hass,
-            _LOGGER,
-            name=f"{DOMAIN}_{entry.entry_id}",
+            logger=__import__(__name__).__dict__.get("LOGGER"),
+            name=DOMAIN,
             update_interval=timedelta(seconds=update_interval),
         )
 
+    @property
+    def url(self):
+        data = self.config_entry.data
+        options = self.config_entry.options
+
+        return build_url(
+            options.get(CONF_SEARCH_EXACT, data.get(CONF_SEARCH_EXACT)),
+            data.get(CONF_SEARCH_TERM),
+            options.get(CONF_PSC, data.get(CONF_PSC)),
+            options.get(CONF_OKOLI, data.get(CONF_OKOLI)),
+            options.get(CONF_CENAOD, data.get(CONF_CENAOD)),
+            options.get(CONF_CENADO, data.get(CONF_CENADO)),
+        )
+
     async def _async_update_data(self):
-        try:
-            term = self.entry.data[CONF_SEARCH_TERM]
-            psc = self.entry.data[CONF_PSC]
-            okoli = self.entry.data[CONF_OKOLI]
-            cenaod = self.entry.data[CONF_CENAOD]
-            cenado = self.entry.data[CONF_CENADO]
+        url = self.url
 
-            url=self.url_builder(term, psc, okoli, cenaod, cenado)
+        # DEBUG (doporučeno)
+        self.logger.debug("Fetching URL: %s", url)
 
-            return await self.hass.async_add_executor_job(
-                self.api.fetch,
-                url
-            )
-
-        except Exception as err:
-            _LOGGER.exception("Fetch failed")
-            raise UpdateFailed(err)
-
-    def url_builder(self, term: str, psc: int, okoli: int, cenaod: int, cenado: int):
-        term = quote(f'"{term}"')
-        return BASE_URL.format(term=term, psc=psc, okoli=okoli, cenaod=cenaod, cenado=cenado)
+        return await self.api.fetch(url)
